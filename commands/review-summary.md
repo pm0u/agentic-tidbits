@@ -19,10 +19,24 @@ If `--slack` is passed, send the summary as a Slack DM instead of outputting it 
 ## Step 1: Find PRs Awaiting Review
 
 ```bash
-gh search prs --review-requested=@me --state=open --owner=your-org --json number,title,url,repository,body,additions,deletions,author
+gh search prs --review-requested=@me --state=open --owner=your-org --json number,title,url,repository,author
 ```
 
 If no PRs are found, say "No PRs waiting for your review." and stop.
+
+### Filter to directly-assigned PRs
+
+`--review-requested=@me` includes team-assigned PRs. Filter them out: for each PR, run `gh pr view {number} -R {owner/repo} --json reviewRequests` and only keep PRs where your user login appears directly (not just via a team). Drop any PRs that are only team-assigned.
+
+### Fetch PR details
+
+For each remaining PR, fetch the body and stats:
+
+```bash
+gh pr view {number} -R {owner/repo} --json body,additions,deletions
+```
+
+Batch these calls in parallel where possible.
 
 ## Step 2: Triage
 
