@@ -4,23 +4,27 @@ description: Morning PR review summary — find PRs awaiting review, adversarial
 
 # Review Summary
 
-Fetch all open PRs where you're a requested reviewer across the GitHub org, run an adversarial code review on each, clean up AI-generated descriptions, and present a summary.
+Fetch all open PRs where you're a requested reviewer, run an adversarial code review on each, clean up AI-generated descriptions, and present a summary.
 
 ## Usage
 
 ```
-/review-summary [--slack]
+/review-summary [--slack] [--org=<org>]
 ```
 
 $ARGUMENTS
 
 If `--slack` is passed, send the summary as a Slack DM instead of outputting it here.
 
+If `--org=<org>` is passed, scope the search to that GitHub org (adds `--owner=<org>` to the `gh search prs` call). Otherwise, search across all orgs where you're a requested reviewer.
+
 ## Step 1: Find PRs Awaiting Review
 
 ```bash
-gh search prs --review-requested=@me --state=open --owner=your-org --json number,title,url,repository,author
+gh search prs --review-requested=@me --state=open --json number,title,url,repository,author
 ```
+
+Add `--owner=<org>` if `--org` was passed.
 
 If no PRs are found, say "No PRs waiting for your review." and stop.
 
