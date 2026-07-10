@@ -38,10 +38,14 @@ Subagents cannot spawn subagents — all spawning happens here.
    - **Bring Blockers and genuine Questions to the user.** Go back and forth as needed until they're resolved; revise the spec with the answers.
    - **Verdict Rethink** — stop and discuss the approach with the user before any build happens.
    - Re-review only if the spec changed materially. Once through this gate, the spec is frozen — mid-loop scope changes mean starting a new loop.
-5. Confirm the working tree is clean; if not, stop and ask. Record the baseline:
+5. Confirm the working tree is clean; if not, stop and ask. Put the work on a feature branch so the loop's commits stay off the main branch and the full range is reviewable as a unit:
    ```bash
+   # Stay on the current branch if it's already a feature branch.
+   # If HEAD is the default branch (main/master), create one off it:
+   git switch -c sloop/{short-task-slug}
    BASELINE=$(git rev-parse HEAD)
    ```
+   Derive `{short-task-slug}` from the task in kebab-case. Record the baseline *after* branching, and tell the user which branch the loop is building on.
 
 ### Phase 1: Build
 
@@ -75,14 +79,17 @@ Subagents cannot spawn subagents — all spawning happens here.
 
 ### Phase 4: Report
 
-12. Present the final report:
+12. Generate a diffr link for the full range so the human can review the changes in one place: call the `mcp__diff-review__get_diff_link` tool with `base={BASELINE}` and `head={HEAD}`. Never hand-build the URL. If the tool is unavailable, note that in the report rather than fabricating a link.
+13. Present the final report:
 
 ```markdown
 ## Sloop Report
 
 **Task:** {spec one-liner}
 **Result:** {Passed review | Escalated after N iterations}
+**Branch:** {feature branch the loop built on}
 **Commits:** {BASELINE}..{HEAD} ({N} commits, {N} iterations)
+**Diff:** {diffr link from get_diff_link}
 
 ### What was built
 {Brief summary from the final Build Report}
