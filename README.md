@@ -14,12 +14,15 @@ opkg install gh@pm0u/edc
 |-------|-------------|
 | `adversarial-plan-reviewer` | Stress-tests implementation plans. Pokes holes in assumptions, identifies risks, and challenges feasibility before work begins. |
 | `adversarial-code-reviewer` | Hunts for AI-generated failure modes in code changes. Targets reckless completion patterns, fabricated assumptions, scope violations, and engineering judgment issues. |
+| `adversarial-architecture-reviewer` | Reviews code changes at the system level — placement, pattern consistency, complexity budget, and direction. Pairs with the code reviewer for big-picture coverage. |
+| `sloop-dev` | Implementation agent for the `/sloop` loop. Builds against a spec in phases, verifies for real, and reports honestly what wasn't verified. |
 | `distill-learnings` | Extracts reusable lessons from completed work. |
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `/sloop` | Engineering loop: a plan reviewer stress-tests the spec at handoff, a dev agent builds, two adversarial reviewers attack in parallel, and a coordinator iterates with fresh dev agents until the code passes review. |
 | `/build-n-break` | Execute a task then adversarially review the result. You review disputes, not the full diff. |
 | `/review-plan` | Run an adversarial review against a plan or design doc. |
 | `/review-code` | Run an adversarial code review against recent changes. |
