@@ -1,5 +1,5 @@
 name: edc
-version: 0.5.3
+version: 0.6.0
 description: Defensive tools for working with AI
 keywords:
   [adversarial-review, code-review, plan-review, verification, ai-workflow]

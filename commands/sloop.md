@@ -22,6 +22,7 @@ $ARGUMENTS
 | Role | Who | Job |
 |------|-----|-----|
 | Coordinator | You (primary session) | Spec, spawn, adjudicate, decide pass/iterate |
+| Researcher | `sloop-researcher` agent | Explore the codebase and return a brief so the coordinator authors the spec from fact (Phase 0, when needed) |
 | Plan reviewer | `adversarial-plan-reviewer` agent | Stress-test the spec at handoff, before any code |
 | Builder | `sloop-dev` agent | Implement spec / fix findings, verify, report |
 | Reviewer A | `adversarial-code-reviewer` agent | Line-level: bugs, fabrications, reckless completion |
@@ -34,7 +35,10 @@ Subagents cannot spawn subagents — all spawning happens here.
 ### Phase 0: Spec & Plan Review
 
 1. If no task description was provided, ask for one.
-2. Turn the task into a short spec: goal, constraints, and 2-6 concrete acceptance criteria. Keep it to what fits in a dev agent's prompt — this is the contract every iteration builds and reviews against, not a document. When the task is a refactor, migration, or cleanup, express success partly as *removal* — what gets deleted, that no caller remains on the old path, that the replacement doesn't survive alongside the thing it replaces. A dev agent will make a refactor "work" additively and leave the old code in place unless the criteria say otherwise.
+2. Author the spec — grounded in the codebase, not guesswork.
+   - **Research first, if the task needs it.** When the task touches an area you don't know, has non-trivial scope, or rests on assumptions worth checking, spawn the `sloop-researcher` agent with the task and any specific questions you have. It explores and returns a brief — where the change lands, the conventions to follow, what "done" requires, assumptions that don't hold, and candidate criteria — while keeping the exploration out of your context. Skip it when the task is small or you already know the ground; don't burn a round-trip on something obvious.
+   - **You write the spec.** From the brief (or directly), author a short spec: goal, constraints, and 2-6 concrete acceptance criteria. The researcher's suggested criteria are raw material — accept, cut, or rewrite them; you own the contract because you adjudicate every finding against it. Keep it to what fits in a dev agent's prompt — this is what every iteration builds and reviews against, not a document.
+   - When the task is a refactor, migration, or cleanup, express success partly as *removal* — what gets deleted, that no caller remains on the old path, that the replacement doesn't survive alongside the thing it replaces. A dev agent will make a refactor "work" additively and leave the old code in place unless the criteria say otherwise.
 3. Spawn the `adversarial-plan-reviewer` agent with the spec. Tell it what the user originally asked for (so it can catch spec drift) and let it ground its review in the codebase.
 4. Triage its findings. This is the one interactive gate in the loop — the spec is cheap to change now and expensive to change after three build iterations:
    - **Fold in cheap fixes yourself** — missing acceptance criteria, ambiguous wording, unstated constraints the codebase makes obvious. (Both modes.)
@@ -46,10 +50,10 @@ Subagents cannot spawn subagents — all spawning happens here.
    ```bash
    # Stay on the current branch if it's already a feature branch.
    # If HEAD is the default branch (main/master), create one off it:
-   git switch -c sloop/{short-task-slug}
+   git switch -c {branch-name}
    BASELINE=$(git rev-parse HEAD)
    ```
-   Derive `{short-task-slug}` from the task in kebab-case. Record the baseline *after* branching, and tell the user which branch the loop is building on.
+   Name the branch by the project's convention: if CLAUDE.md, contributing docs, or the existing branch names define a format, follow it exactly (e.g. a `user/{ticket}-{description}` pattern). Only when no convention is discoverable, fall back to `sloop/{short-task-slug}` in kebab-case. Record the baseline *after* branching, and tell the user which branch the loop is building on.
 
 ### Phase 1: Build
 
