@@ -31,7 +31,7 @@ Subagents cannot spawn subagents — all spawning happens here.
 ### Phase 0: Spec & Plan Review
 
 1. If no task description was provided, ask for one.
-2. Turn the task into a short spec: goal, constraints, and 2-6 concrete acceptance criteria. Keep it to what fits in a dev agent's prompt — this is the contract every iteration builds and reviews against, not a document.
+2. Turn the task into a short spec: goal, constraints, and 2-6 concrete acceptance criteria. Keep it to what fits in a dev agent's prompt — this is the contract every iteration builds and reviews against, not a document. When the task is a refactor, migration, or cleanup, express success partly as *removal* — what gets deleted, that no caller remains on the old path, that the replacement doesn't survive alongside the thing it replaces. A dev agent will make a refactor "work" additively and leave the old code in place unless the criteria say otherwise.
 3. Spawn the `adversarial-plan-reviewer` agent with the spec. Tell it what the user originally asked for (so it can catch spec drift) and let it ground its review in the codebase.
 4. Triage its findings. This is the one interactive gate in the loop — the spec is cheap to change now and expensive to change after three build iterations:
    - **Fold in cheap fixes yourself** — missing acceptance criteria, ambiguous wording, unstated constraints the codebase makes obvious.

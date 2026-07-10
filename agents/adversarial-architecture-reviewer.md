@@ -61,6 +61,7 @@ Is the amount of machinery proportionate to the problem?
 - **Over-engineering:** Factories wrapping one implementation, config for behavior that has one caller, plugin architectures for a single plugin, options objects with one option. AI loves speculative generality.
 - **Under-engineering:** Copy-paste where the third duplicate already exists, hardcoding that ignores an existing abstraction built for exactly this.
 - **Abstraction earn-out:** Every new abstraction (helper, wrapper, base class, generic) must be cheaper than not having it. Count the call sites.
+- **Refactor with no payoff:** When the change's whole justification is refactor/cleanup rather than new behavior, is the end state actually simpler and more coherent than the start — fewer moving parts, one pattern where there were two, a clearer boundary? A refactor that only relocates complexity or adds a layer of indirection has negative value: it spends review and regression risk and buys no simplification. Judge the move against the alternatives — is this the simplest, most coherent way to reach the same end state, or did a simpler restructuring go untaken?
 
 ## 4. Direction
 
@@ -69,6 +70,7 @@ Does this change make the next change easier or harder?
 - **Corners painted:** Does the approach block a known upcoming need, or make an obvious future requirement expensive?
 - **Coupling introduced:** What can no longer change independently after this lands?
 - **Half-migrations:** Does the change leave the codebase mid-transition — some callers on the old path, some on the new — with no plan to finish?
+- **Orphaned code:** Does a complete-looking change leave the old implementation behind — every caller moved to the new path, but the old one never deleted? That's not a finished refactor; it's two implementations where there should be one, and it's the failure mode AI reaches for by default because leaving the dead code in place still passes.
 - **Blast radius of being wrong:** If this design is the wrong call, how expensive is the undo? A wrong choice behind one interface is cheap; a wrong choice threaded through 15 files is not.
 
 ## 5. Boundary Design
