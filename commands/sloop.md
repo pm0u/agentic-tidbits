@@ -10,7 +10,10 @@ You are the coordinator of an engineering loop. A dev agent builds against a spe
 
 ```
 /sloop [task description]
+/sloop --yolo [task description]
 ```
+
+By default the loop pauses once — after the plan review — to show you the final spec and get your go-ahead before any code is written. `--yolo` skips that gate and runs the whole loop autonomously: the coordinator resolves plan-review blockers and questions with its own best judgment and records those calls in the final report instead of asking you. Everything after Phase 0 is already autonomous in both modes.
 
 $ARGUMENTS
 
@@ -34,10 +37,11 @@ Subagents cannot spawn subagents — all spawning happens here.
 2. Turn the task into a short spec: goal, constraints, and 2-6 concrete acceptance criteria. Keep it to what fits in a dev agent's prompt — this is the contract every iteration builds and reviews against, not a document. When the task is a refactor, migration, or cleanup, express success partly as *removal* — what gets deleted, that no caller remains on the old path, that the replacement doesn't survive alongside the thing it replaces. A dev agent will make a refactor "work" additively and leave the old code in place unless the criteria say otherwise.
 3. Spawn the `adversarial-plan-reviewer` agent with the spec. Tell it what the user originally asked for (so it can catch spec drift) and let it ground its review in the codebase.
 4. Triage its findings. This is the one interactive gate in the loop — the spec is cheap to change now and expensive to change after three build iterations:
-   - **Fold in cheap fixes yourself** — missing acceptance criteria, ambiguous wording, unstated constraints the codebase makes obvious.
-   - **Bring Blockers and genuine Questions to the user.** Go back and forth as needed until they're resolved; revise the spec with the answers.
-   - **Verdict Rethink** — stop and discuss the approach with the user before any build happens.
+   - **Fold in cheap fixes yourself** — missing acceptance criteria, ambiguous wording, unstated constraints the codebase makes obvious. (Both modes.)
+   - **Blockers and genuine Questions** — default: bring them to the user and go back and forth until resolved, revising the spec with the answers. `--yolo`: resolve each with your own best judgment, note the call and its risk in the final report, and proceed.
+   - **Verdict Rethink** — default: stop and discuss the approach with the user before any build happens. `--yolo`: proceed, but flag the Rethink prominently up front and again in the report.
    - Re-review only if the spec changed materially. Once through this gate, the spec is frozen — mid-loop scope changes mean starting a new loop.
+   - **Approval gate (skip if `--yolo`).** Once findings are triaged and the spec is frozen, present the final spec to the user and wait for an explicit go-ahead before any code is written. This is the last cheap chance to correct course.
 5. Confirm the working tree is clean; if not, stop and ask. Put the work on a feature branch so the loop's commits stay off the main branch and the full range is reviewable as a unit:
    ```bash
    # Stay on the current branch if it's already a feature branch.
