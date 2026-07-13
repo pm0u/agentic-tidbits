@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "loadout",
+  "owner": { "name": "Paul Mourer" },
+  "description": "Defensive tools for working with AI — everyday-carry utilities (edc) and the heavier engineering-loop machinery (ghb).",
+  "plugins": [
+    {
+      "name": "edc",
+      "source": "./plugins/edc",
+      "description": "Everyday-carry AI utilities: one-shot prompt tools with no agents — derive/reverse-spec, trace-flow, mermaid, un-ai, and more."
+    },
+    {
+      "name": "ghb",
+      "source": "./plugins/ghb",
+      "description": "Get-home-bag: the sloop and coop engineering loops and adversarial-review commands, plus the agents they spawn."
+    }
+  ]
+}

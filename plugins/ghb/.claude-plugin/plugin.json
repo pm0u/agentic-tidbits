@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "ghb",
+  "version": "0.9.0",
+  "description": "Get-home-bag — the heavier machinery: the sloop and coop engineering loops and the adversarial-review commands, plus the loop and reviewer agents they spawn.",
+  "author": { "name": "Paul Mourer" },
+  "license": "MIT",
+  "keywords": ["adversarial-review", "code-review", "plan-review", "verification", "engineering-loop", "tiers"]
+}

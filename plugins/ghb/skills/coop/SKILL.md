@@ -1,4 +1,5 @@
 ---
+name: coop
 description: Cooperative engineering loop — human and agents build a change together, split by tier, under adversarial review
 ---
 
@@ -17,11 +18,12 @@ re-deriving the code. So coop routes those slices to the human on purpose.
 
 ## The tier rubric
 
-Slices, tiers, shells, classification, and bubble-up are all defined in
-[`docs/tiers.md`](../docs/tiers.md). That file is the single source of truth. Read it at
-the start of every run, and **inject its content into every subagent prompt** — subagents
-do not inherit it from your context or from memory, so an un-injected rubric means agents
-tiering and flagging blind.
+Slices, tiers, shells, classification, and bubble-up are all defined in the tier rubric,
+which ships with this plugin at **`${CLAUDE_PLUGIN_ROOT}/docs/tiers.md`** — the single
+source of truth. Read that file (with the Read tool; `${CLAUDE_PLUGIN_ROOT}` expands to the
+plugin's install directory) at the start of every run, and **inject its content into every
+subagent prompt** — subagents do not inherit it from your context or from memory, so an
+un-injected rubric means agents tiering and flagging blind.
 
 ## Usage
 
