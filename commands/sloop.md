@@ -22,12 +22,12 @@ $ARGUMENTS
 | Role | Who | Job |
 |------|-----|-----|
 | Coordinator | You (primary session) | Spec, spawn, adjudicate, decide pass/iterate |
-| Researcher | `sloop-researcher` agent | Explore the codebase and return a brief so the coordinator authors the spec from fact (Phase 0, when needed) |
+| Researcher | `loop-researcher` agent | Explore the codebase and return a brief so the coordinator authors the spec from fact (Phase 0, when needed) |
 | Plan reviewer | `adversarial-plan-reviewer` agent | Stress-test the spec at handoff, before any code |
-| Builder | `sloop-dev` agent | Implement spec / fix findings, verify, report |
+| Builder | `loop-dev` agent | Implement spec / fix findings, verify, report |
 | Reviewer A | `adversarial-code-reviewer` agent | Line-level: bugs, fabrications, reckless completion |
 | Reviewer B | `adversarial-architecture-reviewer` agent | System-level: placement, patterns, complexity, direction |
-| Verifier | `sloop-verifier` agent | Reproduce the Build Report's verification claims, attack its "not verified" list (Phase 2, when the report claims behavioral verification) |
+| Verifier | `loop-verifier` agent | Reproduce the Build Report's verification claims, attack its "not verified" list (Phase 2, when the report claims behavioral verification) |
 
 Subagents cannot spawn subagents — all spawning happens here.
 
@@ -37,7 +37,7 @@ Subagents cannot spawn subagents — all spawning happens here.
 
 1. If no task description was provided, ask for one.
 2. Author the spec — grounded in the codebase, not guesswork.
-   - **Research first, if the task needs it.** When the task touches an area you don't know, has non-trivial scope, or rests on assumptions worth checking, spawn the `sloop-researcher` agent with the task and any specific questions you have. It explores and returns a brief — where the change lands, the conventions to follow, what "done" requires, assumptions that don't hold, and candidate criteria — while keeping the exploration out of your context. Skip it when the task is small or you already know the ground; don't burn a round-trip on something obvious.
+   - **Research first, if the task needs it.** When the task touches an area you don't know, has non-trivial scope, or rests on assumptions worth checking, spawn the `loop-researcher` agent with the task and any specific questions you have. It explores and returns a brief — where the change lands, the conventions to follow, what "done" requires, assumptions that don't hold, and candidate criteria — while keeping the exploration out of your context. Skip it when the task is small or you already know the ground; don't burn a round-trip on something obvious.
    - **You write the spec.** From the brief (or directly), author a short spec: goal, constraints, and 2-6 concrete acceptance criteria. The researcher's suggested criteria are raw material — accept, cut, or rewrite them; you own the contract because you adjudicate every finding against it. Keep it to what fits in a dev agent's prompt — this is what every iteration builds and reviews against, not a document.
    - When the task is a refactor, migration, or cleanup, express success partly as *removal* — what gets deleted, that no caller remains on the old path, that the replacement doesn't survive alongside the thing it replaces. A dev agent will make a refactor "work" additively and leave the old code in place unless the criteria say otherwise.
 3. Spawn the `adversarial-plan-reviewer` agent with the spec. Tell it what the user originally asked for (so it can catch spec drift) and let it ground its review in the codebase.
@@ -60,7 +60,7 @@ Subagents cannot spawn subagents — all spawning happens here.
 
 ### Phase 1: Build
 
-6. Spawn the `sloop-dev` agent:
+6. Spawn the `loop-dev` agent:
    ```
    Baseline commit: {BASELINE}
    Baseline verification: {suite status at baseline — passing, or the pre-existing failures}
@@ -81,7 +81,7 @@ Subagents cannot spawn subagents — all spawning happens here.
 
 8. Record the full range: `RANGE={BASELINE}..$(git rev-parse HEAD)`. On fix rounds, also record the delta since the last review: `DELTA={previous round's HEAD}..$(git rev-parse HEAD)`.
 9. Spawn **both reviewers in parallel** (one message, multiple Agent calls). Give each the range, the spec, the research brief (if one exists — it saves each reviewer re-mapping the neighborhood), and the dev agent's Build Report — including its "not verified" and "assumptions" sections, which tell reviewers where to dig.
-   - **Verifier (conditional).** If the Build Report's Verified section claims behavioral verification (ran a CLI, hit an endpoint, loaded a page — anything beyond the test suite) or its Not verified section is non-trivial, spawn the `sloop-verifier` agent in the same parallel batch with the range, the spec, the Build Report, and the baseline verification status. If the report's verification was just the test suite, skip the verifier and instead direct the code reviewer to re-run the suite itself as part of its honesty check.
+   - **Verifier (conditional).** If the Build Report's Verified section claims behavioral verification (ran a CLI, hit an endpoint, loaded a page — anything beyond the test suite) or its Not verified section is non-trivial, spawn the `loop-verifier` agent in the same parallel batch with the range, the spec, the Build Report, and the baseline verification status. If the report's verification was just the test suite, skip the verifier and instead direct the code reviewer to re-run the suite itself as part of its honesty check.
    - **On fix rounds:** give reviewers both ranges — the full range for orientation, the delta as the focus — plus the prior round's findings and the dev agent's fix/dispute table. Direct them to confirm each claimed fix and check the delta for regressions, not re-review the whole range from scratch. If the harness can continue a prior agent with its context intact (e.g. a SendMessage tool), continue the previous round's reviewers instead of spawning fresh — a reviewer's accumulated codebase model is an asset, and "confirm what you found is fixed" is exactly the follow-up it's positioned for. Otherwise spawn fresh. (This continuation rule is for reviewers only — the dev agent is always fresh.)
 
 ### Phase 3: Adjudicate
@@ -93,7 +93,7 @@ Subagents cannot spawn subagents — all spawning happens here.
    - **Verifier results** — a Contradicted claim is automatically actionable *and* discredits the rest of that Build Report: re-weight its other claims and disputes accordingly. Not-reproducible items go to the final report's "What to check". A Contradicted verdict from the verifier blocks a pass for the round even if both review verdicts are clean.
 11. Decide:
    - **Pass** — both review verdicts clean (Clean / Sound) or all remaining findings dismissed or info-level, and the verifier (if run) did not report Contradicted → Phase 4.
-   - **Iterate** — actionable findings remain → spawn a **fresh** `sloop-dev` agent with the spec, the actionable findings (verbatim, with file references), and the previous Build Report. Return to Phase 2.
+   - **Iterate** — actionable findings remain → spawn a **fresh** `loop-dev` agent with the spec, the actionable findings (verbatim, with file references), and the previous Build Report. Return to Phase 2.
    - **Stall** — an architecture verdict of **Wrong Direction**, the same finding surviving two rounds, or 3 iterations completed → stop and escalate to the human. More loops won't fix a disagreement about direction.
 
 ### Phase 4: Report

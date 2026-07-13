@@ -24,12 +24,12 @@ By default the loop pauses once, after the plan review, to show you the final sp
 | Role | Who | Job |
 |------|-----|-----|
 | Coordinator | primary session | Writes the spec, spawns the agents, adjudicates findings, decides pass/iterate. Never writes code. |
-| Researcher | `sloop-researcher` | Explores the codebase and returns a brief so the coordinator authors the spec from fact. Phase 0, only when the task needs grounding the coordinator lacks. |
+| Researcher | `loop-researcher` | Explores the codebase and returns a brief so the coordinator authors the spec from fact. Phase 0, only when the task needs grounding the coordinator lacks. |
 | Plan reviewer | `adversarial-plan-reviewer` | Stress-tests the spec at handoff, before any code exists. |
-| Builder | `sloop-dev` | Implements the spec (or fixes findings) in phases, verifies for real, reports honestly what it didn't verify. Fresh instance every iteration. |
+| Builder | `loop-dev` | Implements the spec (or fixes findings) in phases, verifies for real, reports honestly what it didn't verify. Fresh instance every iteration. |
 | Reviewer A | `adversarial-code-reviewer` | Line level: bugs, fabrications, reckless completion. |
 | Reviewer B | `adversarial-architecture-reviewer` | System level: placement, patterns, complexity, direction. |
-| Verifier | `sloop-verifier` | Reproduces the build report's verification claims and attacks its "not verified" list. Spawned alongside the reviewers when the report claims behavioral verification; skipped when re-running the test suite covers it. |
+| Verifier | `loop-verifier` | Reproduces the build report's verification claims and attacks its "not verified" list. Spawned alongside the reviewers when the report claims behavioral verification; skipped when re-running the test suite covers it. |
 
 Subagents can't spawn subagents — all spawning happens in the coordinator.
 

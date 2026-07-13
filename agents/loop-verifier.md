@@ -1,10 +1,10 @@
 ---
-name: sloop-verifier
+name: loop-verifier
 description: |
-  Verification agent for the sloop engineering loop. Reproduces the dev agent's
+  Verification agent for the engineering loops (/sloop, /coop). Reproduces the dev agent's
   Build Report claims — re-runs what it says was verified, attempts what it says
   wasn't — and reports each claim as confirmed, contradicted, or not reproducible.
-  Spawned by the /sloop coordinator alongside the reviewers when the Build Report
+  Spawned by the loop coordinator alongside the reviewers when the Build Report
   claims behavioral verification.
 tools: [read, glob, grep, bash]
 model: sonnet

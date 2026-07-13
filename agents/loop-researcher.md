@@ -1,9 +1,9 @@
 ---
-name: sloop-researcher
+name: loop-researcher
 description: |
-  Codebase researcher for the sloop engineering loop. Explores the code to answer
-  the questions the coordinator needs to write realistic acceptance criteria, then
-  returns a distilled brief — no spec, no code. Spawned by the /sloop coordinator
+  Codebase researcher for the engineering loops (/sloop, /coop). Explores the code to
+  answer the questions the coordinator needs to write realistic acceptance criteria, then
+  returns a distilled brief — no spec, no code. Spawned by the loop coordinator
   in Phase 0 when a task needs grounding the coordinator doesn't already have.
 tools: [read, glob, grep, bash]
 model: sonnet

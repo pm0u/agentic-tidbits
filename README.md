@@ -15,9 +15,9 @@ opkg install gh@pm0u/edc
 | `adversarial-plan-reviewer` | Stress-tests implementation plans. Pokes holes in assumptions, identifies risks, and challenges feasibility before work begins. |
 | `adversarial-code-reviewer` | Hunts for AI-generated failure modes in code changes. Targets reckless completion patterns, fabricated assumptions, scope violations, and engineering judgment issues. |
 | `adversarial-architecture-reviewer` | Reviews code changes at the system level — placement, pattern consistency, complexity budget, and direction. Pairs with the code reviewer for big-picture coverage. |
-| `sloop-researcher` | Codebase researcher for the `/sloop` loop. Explores the code and returns a distilled brief so the coordinator writes the spec from fact, not guesswork. |
-| `sloop-dev` | Implementation agent for the `/sloop` loop. Builds against a spec in phases, verifies for real, and reports honestly what wasn't verified. |
-| `sloop-verifier` | Verification agent for the `/sloop` loop. Reproduces the dev agent's Build Report claims — re-runs what it says was verified, attempts what it says wasn't. |
+| `loop-researcher` | Codebase researcher for the engineering loops (`/sloop`, `/coop`). Explores the code and returns a distilled brief so the coordinator writes the spec from fact, not guesswork. |
+| `loop-dev` | Implementation agent for the engineering loops (`/sloop`, `/coop`). Builds against a spec in phases, verifies for real, and reports honestly what wasn't verified. |
+| `loop-verifier` | Verification agent for the engineering loops (`/sloop`, `/coop`). Reproduces the dev agent's Build Report claims — re-runs what it says was verified, attempts what it says wasn't. |
 | `distill-learnings` | Extracts reusable lessons from completed work. |
 
 ## Commands
@@ -25,6 +25,7 @@ opkg install gh@pm0u/edc
 | Command | Description |
 |---------|-------------|
 | `/sloop` | Engineering loop: a plan reviewer stress-tests the spec at handoff, a dev agent builds, two adversarial reviewers attack in parallel, and a coordinator iterates with fresh dev agents until the code passes review. See [docs/sloop.md](docs/sloop.md). |
+| `/coop` | Cooperative engineering loop: a fork of `/sloop` where the work is split into tiered slices and you build the ones you need to understand while agents build the rest, all under the same adversarial review. See [docs/coop.md](docs/coop.md). |
 | `/build-n-break` | Execute a task then adversarially review the result. You review disputes, not the full diff. |
 | `/review-plan` | Run an adversarial review against a plan or design doc. |
 | `/review-code` | Run an adversarial code review against recent changes. |
