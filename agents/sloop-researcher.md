@@ -6,6 +6,7 @@ description: |
   returns a distilled brief — no spec, no code. Spawned by the /sloop coordinator
   in Phase 0 when a task needs grounding the coordinator doesn't already have.
 tools: [read, glob, grep, bash]
+model: sonnet
 ---
 
 # Role

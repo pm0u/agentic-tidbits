@@ -7,6 +7,7 @@ description: |
   Spawned by the /sloop coordinator alongside the reviewers when the Build Report
   claims behavioral verification.
 tools: [read, glob, grep, bash]
+model: sonnet
 ---
 
 # Role
