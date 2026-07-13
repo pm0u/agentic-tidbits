@@ -27,6 +27,7 @@ $ARGUMENTS
 | Builder | `sloop-dev` agent | Implement spec / fix findings, verify, report |
 | Reviewer A | `adversarial-code-reviewer` agent | Line-level: bugs, fabrications, reckless completion |
 | Reviewer B | `adversarial-architecture-reviewer` agent | System-level: placement, patterns, complexity, direction |
+| Verifier | `sloop-verifier` agent | Reproduce the Build Report's verification claims, attack its "not verified" list (Phase 2, when the report claims behavioral verification) |
 
 Subagents cannot spawn subagents — all spawning happens here.
 
@@ -55,33 +56,43 @@ Subagents cannot spawn subagents — all spawning happens here.
    ```
    Name the branch by the project's convention: if CLAUDE.md, contributing docs, or the existing branch names define a format, follow it exactly (e.g. a `user/{ticket}-{description}` pattern). Only when no convention is discoverable, fall back to `sloop/{short-task-slug}` in kebab-case. Record the baseline *after* branching, and tell the user which branch the loop is building on.
 
+   Then record the baseline's verification status: run the project's test suite (or its fastest meaningful subset) at the baseline and note whether it passes, listing any pre-existing failures. This goes into every dev and verifier prompt — without it, failures that predate the loop get misattributed to the build.
+
 ### Phase 1: Build
 
 6. Spawn the `sloop-dev` agent:
    ```
    Baseline commit: {BASELINE}
+   Baseline verification: {suite status at baseline — passing, or the pre-existing failures}
 
    Spec:
    {spec with acceptance criteria}
 
+   Research brief:
+   {the researcher's brief, if one was produced — omit this section otherwise}
+
    Implement this. Work through your phases (orient, plan, implement, verify),
    commit your work, and end with your Build Report.
    ```
+   The research brief is there so the dev agent orients from the map instead of re-doing the exploration — forward it whole; don't summarize it down.
 7. If the dev agent reports blocked (false premise, missing info), resolve it with the user before continuing — don't loop on a broken spec.
 
 ### Phase 2: Review
 
-8. Record the range: `RANGE={BASELINE}..$(git rev-parse HEAD)`.
-9. Spawn **both reviewers in parallel** (one message, two Agent calls). Give each the range, the spec, and the dev agent's Build Report — including its "not verified" and "assumptions" sections, which tell reviewers where to dig. On fix rounds, also include the prior round's findings and the dev agent's fix/dispute table, and direct the reviewer to confirm each claimed fix and check for regressions, not just re-review from scratch.
+8. Record the full range: `RANGE={BASELINE}..$(git rev-parse HEAD)`. On fix rounds, also record the delta since the last review: `DELTA={previous round's HEAD}..$(git rev-parse HEAD)`.
+9. Spawn **both reviewers in parallel** (one message, multiple Agent calls). Give each the range, the spec, the research brief (if one exists — it saves each reviewer re-mapping the neighborhood), and the dev agent's Build Report — including its "not verified" and "assumptions" sections, which tell reviewers where to dig.
+   - **Verifier (conditional).** If the Build Report's Verified section claims behavioral verification (ran a CLI, hit an endpoint, loaded a page — anything beyond the test suite) or its Not verified section is non-trivial, spawn the `sloop-verifier` agent in the same parallel batch with the range, the spec, the Build Report, and the baseline verification status. If the report's verification was just the test suite, skip the verifier and instead direct the code reviewer to re-run the suite itself as part of its honesty check.
+   - **On fix rounds:** give reviewers both ranges — the full range for orientation, the delta as the focus — plus the prior round's findings and the dev agent's fix/dispute table. Direct them to confirm each claimed fix and check the delta for regressions, not re-review the whole range from scratch. If the harness can continue a prior agent with its context intact (e.g. a SendMessage tool), continue the previous round's reviewers instead of spawning fresh — a reviewer's accumulated codebase model is an asset, and "confirm what you found is fixed" is exactly the follow-up it's positioned for. Otherwise spawn fresh. (This continuation rule is for reviewers only — the dev agent is always fresh.)
 
 ### Phase 3: Adjudicate
 
-10. Merge the two reviews and triage every finding:
+10. Merge the reviews (and the Verification Report, if a verifier ran) and triage every finding:
    - **Actionable** — Critical/Structural Flaw findings, and Warnings you judge legitimate. These go to the next dev round.
    - **Dismissed** — nitpicks, generic best-practice noise, findings that misread the code, demands beyond the spec's scope. Note why; don't forward them.
    - **Disputed** — the dev agent pushed back with evidence, or the two reviewers conflict. Adjudicate with evidence if you can (read the file, run the command); otherwise park it for the human.
+   - **Verifier results** — a Contradicted claim is automatically actionable *and* discredits the rest of that Build Report: re-weight its other claims and disputes accordingly. Not-reproducible items go to the final report's "What to check". A Contradicted verdict from the verifier blocks a pass for the round even if both review verdicts are clean.
 11. Decide:
-   - **Pass** — both verdicts clean (Clean / Sound) or all remaining findings dismissed or info-level → Phase 4.
+   - **Pass** — both review verdicts clean (Clean / Sound) or all remaining findings dismissed or info-level, and the verifier (if run) did not report Contradicted → Phase 4.
    - **Iterate** — actionable findings remain → spawn a **fresh** `sloop-dev` agent with the spec, the actionable findings (verbatim, with file references), and the previous Build Report. Return to Phase 2.
    - **Stall** — an architecture verdict of **Wrong Direction**, the same finding surviving two rounds, or 3 iterations completed → stop and escalate to the human. More loops won't fix a disagreement about direction.
 
