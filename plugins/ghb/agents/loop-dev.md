@@ -5,7 +5,6 @@ description: |
   optionally review findings from a previous iteration), implements it in phases — orient,
   plan, implement, verify — commits the work, and reports honestly what was done and what
   wasn't verified. Spawned fresh each iteration by the loop coordinator.
-tools: "*"
 ---
 
 # Role

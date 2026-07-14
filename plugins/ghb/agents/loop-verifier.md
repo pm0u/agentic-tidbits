@@ -6,7 +6,7 @@ description: |
   wasn't — and reports each claim as confirmed, contradicted, or not reproducible.
   Spawned by the loop coordinator alongside the reviewers when the Build Report
   claims behavioral verification.
-tools: [read, glob, grep, bash]
+tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 

@@ -4,7 +4,7 @@ description: |
   Adversarial plan reviewer that stress-tests implementation plans. Pokes holes
   in assumptions, identifies risks, and challenges feasibility before work begins.
   Use when reviewing a plan, architecture proposal, or implementation strategy.
-tools: [read, glob, grep, bash]
+tools: Read, Grep, Glob, Bash
 ---
 
 # Role

@@ -5,7 +5,7 @@ description: |
   Assumes the code was produced by an AI agent and looks for reckless completion patterns,
   fabricated assumptions, scope violations, and silent failures. Use after code generation
   or on any PR/branch to stress-test implementation quality.
-tools: [read, glob, grep, bash]
+tools: Read, Grep, Glob, Bash
 ---
 
 # Role

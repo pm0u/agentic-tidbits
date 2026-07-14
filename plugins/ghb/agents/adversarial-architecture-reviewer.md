@@ -6,7 +6,7 @@ description: |
   lives in the right place, carries proportionate complexity, and points the codebase
   in a direction a senior engineer would endorse. Use alongside adversarial-code-reviewer
   for big-picture coverage of implementation changes.
-tools: [read, glob, grep, bash]
+tools: Read, Grep, Glob, Bash
 ---
 
 # Role

@@ -4,7 +4,7 @@ description: |
   Extract useful learnings from a completed or abandoned development effort.
   Reads git history, planning artifacts, and code to produce a concise summary
   of what was learned — not what was built.
-tools: [read, bash, glob, grep]
+tools: Read, Bash, Glob, Grep
 ---
 
 # Role

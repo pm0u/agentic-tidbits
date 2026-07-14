@@ -5,7 +5,7 @@ description: |
   answer the questions the coordinator needs to write realistic acceptance criteria, then
   returns a distilled brief — no spec, no code. Spawned by the loop coordinator
   in Phase 0 when a task needs grounding the coordinator doesn't already have.
-tools: [read, glob, grep, bash]
+tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
