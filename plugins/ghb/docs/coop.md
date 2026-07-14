@@ -51,10 +51,12 @@ approve the frozen spec, slice list, and shells before any code.
 
 **Phase 1 — build.** Shells are agreed first. Then the build runs in the order set per seam:
 foundation-first seams (where a slice needs its predecessor to actually exist, not just a
-contract) go first; everything else fans out in parallel — agent slices run in the background
-via `loop-dev` while you build your slices at the same time. The loop reconverges when every
-Build Report is in and you signal done. An agent that finds a Co/Race slice is actually Own
-bubbles it up, and it gets re-routed to you.
+contract) go first; everything else fans out in parallel — each concurrent agent slice runs
+in its own git worktree (via `loop-dev` with worktree isolation) while you build your slices
+in the primary working directory, committing as yourself. The loop reconverges by merging each
+agent's branch back into the feature branch (foundation-first); because shells keep parallel
+slices file-disjoint, those merges stay clean. An agent that finds a Co/Race slice is actually
+Own bubbles it up, and it gets re-routed to you.
 
 **Phase 2 — review.** Both adversarial reviewers attack every slice at full depth regardless
 of tier or who built it — your Own slice gets the same scrutiny as an agent's Race slice. A

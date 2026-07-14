@@ -109,23 +109,35 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 
 8. **Agree the shells first.** No slice — human or agent — starts until the shells at its
    seams are fixed. This is the short shared step that makes the parallel split possible.
-9. **Route and build each slice** per its tier × escalate assignment. Drive it by the build
-   order from Phase 0 step 4:
-   - **Foundation-first seams go first.** Spawn `loop-dev` on the foundational slice(s) in
-     the background and wait for the Build Report. When it lands, notify the human that the
-     seam is ready — that's their signal to start the slice built on top of it.
-   - **Then fan out in parallel.** Spawn the remaining agent slices with `loop-dev` (in the
-     background) and hand the human their slices at the same time. Each `loop-dev` spawn
-     gets the injected rubric, the baseline, the spec, its assigned slice(s) and their
+9. **Route and build each slice** per its tier × escalate assignment, driven by the build
+   order from Phase 0 step 4. **Isolation follows concurrency:** whenever two or more
+   builders run at once — agent+agent or you+agent — each agent builder gets its own git
+   worktree so nothing collides on a shared working tree.
+   - **You build in the primary working directory**, on the feature branch, committing as
+     yourself. You are never put in a worktree — it's your normal repo, and your commits are
+     the base the agents' work merges onto.
+   - **Foundation-first seams go first.** Spawn `loop-dev` on the foundational slice(s) and
+     wait for the Build Report; when it lands, notify the human the seam is ready — their
+     signal to start the slice built on top of it. (A lone foundational agent with nothing
+     else running can build in place; the moment you fan out, isolate.)
+   - **Then fan out in parallel — each concurrent agent in its own worktree.** Spawn the
+     remaining agent slices with `loop-dev` using `isolation: "worktree"`, so each builds on
+     its own branch in its own working dir, in the background, while you build yours. Each
+     spawn gets the injected rubric, the baseline, the spec, its assigned slice(s) and their
      shells, and the research brief — scoped to its slices; it never builds a human slice.
-     The parallelism is real here: the agent slices run during the wall-clock time the
-     human spends building.
    - **Hand the human** the slice, its shells, and what "done" looks like for that tier
      (`docs/tiers.md`) — for an Own slice that's the Verification bar and re-derivable
      understanding, not just green tests.
-   - **Reconverge** when every agent Build Report is in and the human signals done. Assemble
-     the range and move to Phase 2. If a human slice and an agent slice share a file, commit
-     them in sequence, not concurrently, to avoid a collision on the seam.
+   - **Reconverge by merging, foundation-first.** When an agent finishes, merge its worktree
+     branch into the feature branch (foundation slices before the parallel middle); your
+     commits are already there. Because shells force parallel slices to be file-disjoint,
+     these merges should be clean — a merge *conflict* means the seam or tiering was wrong,
+     so stop and escalate rather than resolving blind. When every agent branch is merged and
+     you signal done, the feature branch is the assembled range → Phase 2.
+
+   Sequential runs (only one builder active at a time — a lone agent, or `--escalate=none`
+   sloop-style) build in the primary dir with no worktree; the isolation cost is only paid
+   for genuine concurrency.
 10. **Bubble-up.** Per `docs/tiers.md`, an agent that finds a Co/Race slice is actually Own
     flags it in its Build Report's Own-tier section (or stops blocked if it needs a judgment
     call it'd be guessing at). When that happens, re-tier the slice and re-route it to the
