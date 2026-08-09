@@ -22,8 +22,11 @@ Slices, tiers, shells, classification, and bubble-up are all defined in the tier
 which ships with this plugin at **`${CLAUDE_PLUGIN_ROOT}/docs/tiers.md`** — the single
 source of truth. Read that file (with the Read tool; `${CLAUDE_PLUGIN_ROOT}` expands to the
 plugin's install directory) at the start of every run, and **inject its content into every
-subagent prompt** — subagents do not inherit it from your context or from memory, so an
-un-injected rubric means agents tiering and flagging blind.
+builder and plan-reviewer prompt** — subagents do not inherit it from your context, so an
+un-injected rubric means agents tiering and flagging blind. Scope the injection: `loop-dev`
+needs it to honor shells and bubble up, and the plan reviewer needs it to challenge the
+tiering. The code/architecture reviewers and the verifier never get the rubric or the tier
+labels — they get the shells instead (see Phase 2) — and the researcher needs neither.
 
 ## Usage
 
@@ -62,7 +65,7 @@ $ARGUMENTS
 | Agent builder | `loop-dev` agent                         | Builds the slices routed to agents. Carries the injected rubric so it can honor shells and bubble up mis-tiered slices. Fresh each iteration. |
 | Reviewer A    | `adversarial-code-reviewer` agent         | Line-level, **every slice regardless of tier or who built it**.                                                                               |
 | Reviewer B    | `adversarial-architecture-reviewer` agent | System-level, every slice.                                                                                                                    |
-| Verifier      | `loop-verifier` agent                    | Reproduce Build Report verification claims (Phase 2, when the report claims behavioral verification).                                         |
+| Verifier      | `loop-verifier` agent                    | Reproduce verification claims — every agent Build Report plus the human's done signal (Phase 2, when any claim is behavioral).                |
 
 Subagents cannot spawn subagents — all spawning happens here. `loop-dev`, `loop-researcher`,
 and `loop-verifier` are shared with `/sloop` — coop hands them the tier rubric and their
@@ -125,6 +128,11 @@ assigned slices in the spawn prompt; they behave identically otherwise.
      its own branch in its own working dir, in the background, while you build yours. Each
      spawn gets the injected rubric, the baseline, the spec, its assigned slice(s) and their
      shells, and the research brief — scoped to its slices; it never builds a human slice.
+     Require each spawn's Build Report to name its branch and final HEAD sha — that's what
+     you merge at reconvergence; never guess at a worktree's branch name. A worktree forks
+     from HEAD at spawn time, so commits landed after the spawn aren't visible to that
+     agent — fine for file-disjoint slices, but anything that needs them is
+     foundation-first, not parallel.
    - **Hand the human** the slice, its shells, and what "done" looks like for that tier
      (`docs/tiers.md`) — for an Own slice that's the Verification bar and re-derivable
      understanding, not just green tests.
@@ -133,35 +141,52 @@ assigned slices in the spawn prompt; they behave identically otherwise.
      commits are already there. Because shells force parallel slices to be file-disjoint,
      these merges should be clean — a merge *conflict* means the seam or tiering was wrong,
      so stop and escalate rather than resolving blind. When every agent branch is merged and
-     you signal done, the feature branch is the assembled range → Phase 2.
+     the human signals done, the feature branch is the assembled range → Phase 2. With that
+     done signal, ask the human what they verified — commands run, behavior exercised —
+     their slices produce no Build Report, so this is the claim set the verifier reproduces
+     for their work.
 
    Sequential runs (only one builder active at a time — a lone agent, or `--escalate=none`
    sloop-style) build in the primary dir with no worktree; the isolation cost is only paid
    for genuine concurrency.
 10. **Bubble-up.** Per `docs/tiers.md`, an agent that finds a Co/Race slice is actually Own
     flags it in its Build Report's Own-tier section (or stops blocked if it needs a judgment
-    call it'd be guessing at). When that happens, re-tier the slice and re-route it to the
-    human rather than accepting agent-built Own code.
+    call it'd be guessing at). Re-tier the slice to Own. Flagged-but-built code stays — the
+    human re-derives it in their tier review (Phase 3), and it's rebuilt only if that
+    re-derivation finds the model wrong. A blocked slice routes to the human to build.
 
 ### Phase 2: Review
 
 11. Record the range(s) as sloop does (`RANGE`, and `DELTA` on fix rounds).
-12. Spawn **both reviewers in parallel**, plus the verifier when the Build Report claims
-    behavioral verification. **Reviewers attack every slice at full depth regardless of
+12. Spawn **both reviewers in parallel**, plus the verifier when any verification claim is
+    behavioral — a fan-out produces one Build Report per agent, and the human's done signal
+    is a claim set too; give the verifier all of them, human claims included, and it
+    reproduces the lot. **Reviewers attack every slice at full depth regardless of
     tier or who built it** — a human-built Own slice gets the same adversarial review as an
     agent-built Race slice. Tier changes who _builds_ and how much the _human_ reviews; it
     never softens agent review. Give the reviewers the shells — the agreed contracts are
     exactly what they should check the built code against — but not the tier labels, so a
-    slice's tier can't talk them into going easier on it.
+    slice's tier can't talk them into going easier on it. On fix rounds, follow sloop's
+    Phase 2 rules: full range for orientation, the `DELTA` as focus, the prior round's
+    findings and fix/dispute table attached, and continue the previous round's reviewers
+    (SendMessage) instead of spawning fresh when the harness allows.
 
 ### Phase 3: Adjudicate
 
 13. Merge the reviews (and Verification Report) and triage every finding — actionable /
     dismissed / disputed — as sloop does. Additionally:
-    - **Bubble-up flags** → re-tier the slice, route the rebuild to the human.
+    - **Bubble-up flags** → re-tier to Own; the human re-derives the flagged code in the
+      tier review (next step), and it's rebuilt only if that re-derivation finds the model
+      wrong.
     - **A shell violated by either side** (the built code doesn't honor the agreed contract)
       is automatically actionable — the seam is what everything else was built against.
-14. Decide: **Pass** / **Iterate** / **Stall** (escalate). Same thresholds as sloop. On
+14. **Human tier review — a pass condition.** When the agent verdicts are clean (or every
+    remaining finding is dismissed), walk the human through their per-tier review from
+    `docs/tiers.md` before declaring Pass: predict-before-peek on each agent-built Co
+    slice, a behavior check on each Race slice, and re-derivation of any bubble-up-flagged
+    slice. Findings from this review are actionable like any reviewer's. The loop never
+    passes on agent verdicts alone.
+15. Decide: **Pass** / **Iterate** / **Stall** (escalate). Same thresholds as sloop. On
     iterate, a mixed round routes each slice's fixes to whoever owns it: agent-slice
     findings go to a **fresh** `loop-dev` (never the previous builder); human-slice findings
     go back to **you**. It follows the same build order as Phase 1 — any seam a fix has to
@@ -170,14 +195,16 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 
 ### Phase 4: Report
 
-15. Generate a diffr link for the full range (`mcp__diff-review__get_diff_link`).
-16. Present the final report — the sloop report shape, plus:
+16. Generate a diffr link for the full range (`mcp__diff-review__get_diff_link`).
+17. Present the final report — the sloop report shape, plus:
     - **Who built what** — which slices were human-built vs agent-built, and their tiers.
     - **Tiering decisions** — and any the plan reviewer or bubble-up changed.
     - **Understanding check** — for each Own slice the human built, a short prompt to confirm
       they can still explain it cold: one or two pointed questions about why it works or what
       breaks if a key assumption changes. A passed loop where the human can't answer for their
-      own Own slices is a failed loop — this is where that gets caught, not at 2am.
+      own Own slices is a failed loop — this is where that gets caught, not at 2am. A failed
+      answer doesn't close the loop: the human re-derives the slice (walking it with an agent
+      is fine) and the check re-runs; record the miss and the re-derivation in the report.
 
 ## Guidelines
 

@@ -56,22 +56,29 @@ in its own git worktree (via `loop-dev` with worktree isolation) while you build
 in the primary working directory, committing as yourself. The loop reconverges by merging each
 agent's branch back into the feature branch (foundation-first); because shells keep parallel
 slices file-disjoint, those merges stay clean. An agent that finds a Co/Race slice is actually
-Own bubbles it up, and it gets re-routed to you.
+Own bubbles it up; the slice is re-tiered, you re-derive the flagged code in review, and it's
+rebuilt only if that re-derivation finds the model wrong. When you signal done, you also say
+what you verified — your slices produce no Build Report, so that's the claim set the verifier
+reproduces for your work.
 
 **Phase 2 — review.** Both adversarial reviewers attack every slice at full depth regardless
 of tier or who built it — your Own slice gets the same scrutiny as an agent's Race slice. A
-verifier reproduces behavioral claims when the Build Report makes them. Reviewers get the
-shells (the contracts to check against) but not the tier labels, so a tier can't argue them
-into going easier.
+verifier reproduces behavioral claims when any Build Report — or your own done signal — makes
+them. Reviewers get the shells (the contracts to check against) but not the tier labels, so a
+tier can't argue them into going easier.
 
 **Phase 3 — adjudicate.** The coordinator triages findings as sloop does, plus: a violated
-shell is automatically actionable, and a bubble-up flag re-tiers its slice. On iterate, agent
-findings go to a fresh `loop-dev` and human findings come back to you.
+shell is automatically actionable, and a bubble-up flag re-tiers its slice. Once the agent
+verdicts are clean, you do your per-tier review before the loop can pass — predict-before-peek
+on each Co slice, a behavior check on each Race slice, re-derivation of anything bubble-up
+flagged. On iterate, agent findings go to a fresh `loop-dev` and human findings come back to
+you.
 
 **Phase 4 — report.** The sloop report shape, plus who built what, the tiering decisions, and
 an **understanding check** — a pointed question or two per Own slice you built, to confirm you
 can still explain it cold. A passed loop where you can't answer for your own slices is a failed
-loop; this is where that gets caught, not at 2am.
+loop; this is where that gets caught, not at 2am. A missed answer doesn't close the loop — you
+re-derive the slice and the check re-runs.
 
 ## What you get back
 

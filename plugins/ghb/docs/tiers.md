@@ -2,9 +2,8 @@
 
 The rubric `coop` uses to decide, per slice of a change, who builds it and how much
 you need to understand it afterward. It's the single source of truth: `coop.md`
-references it, the coordinator injects it into every subagent, and a memory pointer
-lets the primary chat pick it up. The rubric lives _here_ and nowhere else, so it
-can't drift.
+references it, and the coordinator injects it into every builder and plan-reviewer
+prompt. The rubric lives _here_ and nowhere else, so it can't drift.
 
 > Tier is a property of the needed code, and specifically a divisible unit of the code, that is needed to accomplish the task. The goal is to create a shared understanding between agents and the human and the framework serves as a guidance for how to determine what is important to force onto the human.
 
