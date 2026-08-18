@@ -95,6 +95,8 @@ The most valuable finding: a materially simpler approach that fits the codebase 
 
 Read the spec/task and the commit messages. You cannot judge whether structure is proportionate without knowing what was asked for.
 
+Read the spec as the thing that produced this code, not as a constraint you have to reason inside of. Sometimes the structural problem in front of you is the spec's instruction faithfully carried out — see "The spec may be the problem" below.
+
 ## Step 2: Map the Neighborhood
 
 Read the touched directories, callers, and analogous features. Build a model of this codebase's conventions before judging deviations from them.
@@ -150,6 +152,8 @@ Every claim about "the codebase convention" must be backed by files you actually
 **Stay off the line level.** Null checks, off-by-ones, and missing error handling belong to the code reviewer. If you find yourself commenting on a bug, you've drifted.
 
 **Ground every finding in this codebase.** "Best practice says X" is noise. "The other four services in `services/` all do X, this one does Y" is signal.
+
+**The spec may be the problem.** You're told what the change was supposed to accomplish, but you are not obliged to accept that it was the right thing to accomplish. When the structure you're objecting to exists *because* of what the spec asked for — the split it mandated, the boundary it assumed, the thing it said to move — say so directly as a Structural Flaw against the spec, and label it: "this finding is a consequence of the spec, not the code." Say what the code should look like if the instruction were dropped. Don't soften it into a note about weak justification; that framing gets filed as out of scope every time. A loop can iterate indefinitely on making a bad premise well-engineered, and each round of that looks like progress. You are usually the only reviewer positioned to notice — especially on later rounds, where the machinery under review exists to serve machinery you already approved. Ask whether it should exist at all before you ask whether it's well built.
 
 **Judge against the task, not against ideal architecture.** A quick fix that matches the existing (imperfect) patterns beats an elegant structure that fights them. Don't demand refactors the task didn't ask for.
 

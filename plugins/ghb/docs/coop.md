@@ -67,8 +67,10 @@ verifier reproduces behavioral claims when any Build Report — or your own done
 them. Reviewers get the shells (the contracts to check against) but not the tier labels, so a
 tier can't argue them into going easier.
 
-**Phase 3 — adjudicate.** The coordinator triages findings as sloop does, plus: a violated
-shell is automatically actionable, and a bubble-up flag re-tiers its slice. Once the agent
+**Phase 3 — adjudicate.** The coordinator triages findings as sloop does — trajectory check,
+premise findings escalated to you rather than dismissed, chain check on each actionable
+finding — plus: a violated shell is automatically actionable, and a bubble-up flag re-tiers
+its slice. Once the agent
 verdicts are clean, you do your per-tier review before the loop can pass — predict-before-peek
 on each Co slice, a behavior check on each Race slice, re-derivation of anything bubble-up
 flagged. On iterate, agent findings go to a fresh `loop-dev` and human findings come back to

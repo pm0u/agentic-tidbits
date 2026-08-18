@@ -105,8 +105,11 @@ assigned slices in the spawn prompt; they behave identically otherwise.
    invariant should be Own). Fold in cheap fixes; bring blockers/Rethink to the user.
 6. **Approval gate (skip per the `--yolo` rule above).** Present the frozen spec, the slice
    list with tiers and builders, and the shells. Wait for go-ahead before any code.
-7. Confirm the working tree is clean; put the work on a feature branch; record `BASELINE`
-   and the baseline verification status. (Same as sloop.)
+7. Confirm the working tree is clean; put the work on a feature branch; record `BASELINE`,
+   the baseline verification status, and the baseline **shape metric** — source lines
+   excluding tests, file count, exported symbol count over the files the spec expects to
+   touch. (Same as sloop; the shape metric is re-measured every round in Phase 3 and is the
+   only thing watching the arc rather than the round.)
 
 ### Phase 1: Build
 
@@ -169,12 +172,19 @@ assigned slices in the spawn prompt; they behave identically otherwise.
     slice's tier can't talk them into going easier on it. On fix rounds, follow sloop's
     Phase 2 rules: full range for orientation, the `DELTA` as focus, the prior round's
     findings and fix/dispute table attached, and continue the previous round's reviewers
-    (SendMessage) instead of spawning fresh when the harness allows.
+    (SendMessage) instead of spawning fresh when the harness allows — including the standing
+    "is the spec itself wrong?" question from round 2 on, and the one **fresh** reviewer added
+    alongside the continued ones at round 3. In coop that fresh reviewer gets the shells but
+    not the tiers, like every other reviewer.
 
 ### Phase 3: Adjudicate
 
-13. Merge the reviews (and Verification Report) and triage every finding — actionable /
-    dismissed / disputed — as sloop does. Additionally:
+13. Re-measure the shape metric and read the trajectory against the spec's stated direction,
+    then merge the reviews (and Verification Report) and triage every finding — actionable /
+    dismissed / disputed — as sloop does, including its **premise** carve-out (complexity-budget
+    and direction findings are never yours to dismiss; surface them to the human in the round
+    they appear) and its **chain check** (is this finding only a consequence of last round's
+    fix?). Additionally:
     - **Bubble-up flags** → re-tier to Own; the human re-derives the flagged code in the
       tier review (next step), and it's rebuilt only if that re-derivation finds the model
       wrong.
@@ -218,4 +228,7 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 - **Shells are the contract.** Once a shell is agreed, neither side changes it unilaterally —
   a contract that moves under a parallel builder is how the seam breaks. If a shell has to
   change, it goes back through the coordinator so both sides re-agree.
+- **Watch the arc, not just the round.** A loop can pass round after round, each fix
+  legitimate, and still end up somewhere the task never asked to go. When the trajectory and
+  the verdicts disagree, the trajectory is the one telling you something new. (Same as sloop.)
 - **Escalate honestly / the human is the final reviewer.** (Same as sloop.)

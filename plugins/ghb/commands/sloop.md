@@ -56,7 +56,11 @@ Subagents cannot spawn subagents — all spawning happens here.
    ```
    Name the branch by the project's convention: if CLAUDE.md, contributing docs, or the existing branch names define a format, follow it exactly (e.g. a `user/{ticket}-{description}` pattern). Only when no convention is discoverable, fall back to `sloop/{short-task-slug}` in kebab-case. Record the baseline *after* branching, and tell the user which branch the loop is building on.
 
-   Then record the baseline's verification status: run the project's test suite (or its fastest meaningful subset) at the baseline and note whether it passes, listing any pre-existing failures. This goes into every dev and verifier prompt — without it, failures that predate the loop get misattributed to the build.
+   Then record two baselines.
+
+   **Verification status:** run the project's test suite (or its fastest meaningful subset) at the baseline and note whether it passes, listing any pre-existing failures. This goes into every dev and verifier prompt — without it, failures that predate the loop get misattributed to the build.
+
+   **Shape:** over the files the spec expects to touch, record a cheap size metric — source lines excluding tests, file count, and exported symbol count is enough. You re-measure it after every round (Phase 3), and it is the only thing in the loop that watches the arc instead of the round. Every round can pass its own review while the change as a whole walks away from what the task asked for; the metric is what makes that visible.
 
 ### Phase 1: Build
 
@@ -83,18 +87,25 @@ Subagents cannot spawn subagents — all spawning happens here.
 9. Spawn **both reviewers in parallel** (one message, multiple Agent calls). Give each the range, the spec, the research brief (if one exists — it saves each reviewer re-mapping the neighborhood), and the dev agent's Build Report — including its "not verified" and "assumptions" sections, which tell reviewers where to dig.
    - **Verifier (conditional).** If the Build Report's Verified section claims behavioral verification (ran a CLI, hit an endpoint, loaded a page — anything beyond the test suite) or its Not verified section is non-trivial, spawn the `loop-verifier` agent in the same parallel batch with the range, the spec, the Build Report, and the baseline verification status. If the report's verification was just the test suite, skip the verifier and instead direct the code reviewer to re-run the suite itself as part of its honesty check.
    - **On fix rounds:** give reviewers both ranges — the full range for orientation, the delta as the focus — plus the prior round's findings and the dev agent's fix/dispute table. Direct them to confirm each claimed fix and check the delta for regressions, not re-review the whole range from scratch. If the harness can continue a prior agent with its context intact (e.g. a SendMessage tool), continue the previous round's reviewers instead of spawning fresh — a reviewer's accumulated codebase model is an asset, and "confirm what you found is fixed" is exactly the follow-up it's positioned for. Otherwise spawn fresh. (This continuation rule is for reviewers only — the dev agent is always fresh.)
+   - **From round 2 on, hand both reviewers a standing question:** *"Is the spec itself wrong? Is any finding you're raising a consequence of the spec rather than of the code?"* Freezing the spec is scope discipline, not a claim that the spec is correct, and after Phase 1 nothing else in the loop revisits the premise. A reviewer that hasn't been invited to make that claim will file it as a mild note about weak justification instead — which is exactly what it looks like on the way past.
+   - **At round 3, add one fresh reviewer** alongside the continued ones — no history, given only the spec, the full range, and that standing question. Continuation preserves a reviewer's codebase model, which is worth having, but it also preserves its investment in its own earlier findings: a reviewer that spent two rounds improving an abstraction is the least likely agent to ask whether the abstraction should exist. Someone arriving cold asks that first.
 
 ### Phase 3: Adjudicate
 
-10. Merge the reviews (and the Verification Report, if a verifier ran) and triage every finding:
+10. Re-measure the shape metric from Phase 0 and add the row to a running table (baseline, round 1, ... round N). Read it against the spec's stated direction before you read a single finding — if the task was removal and every round has added, the loop is not converging no matter how clean the round's verdicts are. Then merge the reviews (and the Verification Report, if a verifier ran) and triage every finding:
    - **Actionable** — Critical/Structural Flaw findings, and Warnings you judge legitimate. These go to the next dev round.
-   - **Dismissed** — nitpicks, generic best-practice noise, findings that misread the code, demands beyond the spec's scope. Note why; don't forward them.
+   - **Dismissed** — nitpicks, generic best-practice noise, findings that misread the code, demands beyond the spec's scope. Note why; don't forward them. Never a premise finding — see below.
+   - **Premise** — a finding that says the abstraction doesn't earn its complexity, the spec's approach is itself the problem, or the change is moving away from what the task asked for. These are not dismissable by you. They look out of scope by construction — questioning a premise always does, and "that's a critique of the justification, not the code" is the exact sentence that buries them — and they are the most expensive class to get wrong, because the loop will happily spend three rounds making a bad premise well-engineered. Surface each one to the human in the round it appears, with your reasoning for or against. Don't stop the loop waiting on the answer unless they ask you to.
    - **Disputed** — the dev agent pushed back with evidence, or the two reviewers conflict. Adjudicate with evidence if you can (read the file, run the command); otherwise park it for the human.
    - **Verifier results** — a Contradicted claim is automatically actionable *and* discredits the rest of that Build Report: re-weight its other claims and disputes accordingly. Not-reproducible items go to the final report's "What to check". A Contradicted verdict from the verifier blocks a pass for the round even if both review verdicts are clean.
+
+   Then run the **chain check** over everything you marked actionable: does this finding exist only because of a fix from a previous round? If it does, re-check that earlier fix against the spec before building another layer on top of it. Findings compound — round 2's fix creates round 3's finding, and each link is justified by the link before it while the chain as a whole drifts from the spec. Nothing else in the loop watches the chain.
+
+   In `--yolo`, a Premise finding still isn't dismissable: resolve it with your own judgment as you do plan-review blockers, say so in the report under its own heading with the call and the reasoning, and re-check it against the trajectory every round after.
 11. Decide:
    - **Pass** — both review verdicts clean (Clean / Sound) or all remaining findings dismissed or info-level, and the verifier (if run) did not report Contradicted → Phase 4.
    - **Iterate** — actionable findings remain → spawn a **fresh** `loop-dev` agent with the spec, the actionable findings (verbatim, with file references), and the previous Build Report. Return to Phase 2.
-   - **Stall** — an architecture verdict of **Wrong Direction**, the same finding surviving two rounds, or 3 iterations completed → stop and escalate to the human. More loops won't fix a disagreement about direction.
+   - **Stall** — an architecture verdict of **Wrong Direction**, the same finding surviving two rounds, 3 iterations completed, or **the shape metric moving against the spec's stated direction for two consecutive rounds** → stop and escalate to the human. More loops won't fix a disagreement about direction, and a loop that keeps adding machinery on a removal task is disagreeing with the spec without ever saying so.
 
 ### Phase 4: Report
 
@@ -113,6 +124,23 @@ Subagents cannot spawn subagents — all spawning happens here.
 ### What was built
 {Brief summary from the final Build Report}
 
+### Acceptance criteria
+| Criterion | Met | Evidence |
+|-----------|-----|----------|
+| {verbatim from the frozen spec} | yes / no / partial | {what shows it} |
+
+Every criterion from the frozen spec gets a row, quoted verbatim — including the ones you'd
+rather narrate around. Individually defensible deviations are invisible in aggregate unless
+they're tabulated.
+
+### Trajectory
+| | {metric} | {metric} |
+|---|---|---|
+| baseline | | |
+| round N | | |
+
+{One line: did the change move the direction the spec asked for?}
+
 ### Review history
 | Round | Code review | Architecture review | Outcome |
 |-------|-------------|--------------------:|---------|
@@ -121,8 +149,16 @@ Subagents cannot spawn subagents — all spawning happens here.
 ### Findings resolved
 {Actionable findings and how each was fixed}
 
+### Premise findings
+{Findings that questioned the spec rather than the code — complexity budget, direction,
+"this shouldn't exist." Which round each was raised in, what you did with it, and where it
+landed. Empty is a valid answer. A passed loop with one still open here is the human's call,
+not yours.}
+
 ### Dismissed as noise
-{Findings you dropped and one-line reasons — the human may disagree}
+{Findings you dropped and one-line reasons — the human may disagree. Anything a reviewer
+framed as a complexity-budget or direction objection doesn't belong here; it goes to
+Disputes, and it should already have been surfaced in the round it appeared.}
 
 ### Disputes for human review
 {Unresolved disputes, unverified claims from the Build Report, and anything
@@ -139,5 +175,6 @@ Draw from the Build Report's unverified items and the disputes above.}
 - **You coordinate; you don't build or review.** The moment you edit code or soften a finding yourself, the loop's independence is gone. Your judgment is applied only in adjudication.
 - **Fresh dev agent every iteration.** Never send fixes back to the previous builder — a fresh agent has no attachment to the code it's reshaping.
 - **Adjudication is the real work.** Forwarding every finding wastes iterations on noise; dismissing too eagerly defeats the loop. When unsure whether a finding is legitimate, verify it yourself with reads and commands — evidence, not vibes.
+- **Watch the arc, not just the round.** Every mechanism in this loop except the shape metric and the stall conditions judges one round against the spec. A loop can pass four rounds in a row, each one a legitimate fix of a legitimate finding, and still end up somewhere the task never asked to go. When the trajectory and the verdicts disagree, the trajectory is the one telling you something new.
 - **Escalate honestly.** Three failed iterations is information, not failure — report what kept coming back and let the human decide. Don't keep looping past the cap hoping for convergence.
 - **The human is the final reviewer.** Passing this loop means the code survived adversarial review, not that it's correct. Route their attention to disputes and unverified claims, not the full diff.
