@@ -18,16 +18,23 @@ re-deriving the code. So coop routes those slices to the human on purpose.
 
 ## The tier rubric
 
-Slices, tiers, shells, classification, bubble-up, and bubble-down (plus the ledger) are all
-defined in the tier rubric,
-which ships with this plugin at **`${CLAUDE_PLUGIN_ROOT}/docs/tiers.md`** — the single
-source of truth. Read that file (with the Read tool; `${CLAUDE_PLUGIN_ROOT}` expands to the
-plugin's install directory) at the start of every run, and **inject its content into every
-builder and plan-reviewer prompt** — subagents do not inherit it from your context, so an
-un-injected rubric means agents tiering and flagging blind. Scope the injection: `loop-dev`
-needs it to honor shells, bubble up a mis-tiered slice, and keep an Absorbed fix absorbed,
-and the plan reviewer needs it to challenge the tiering. The code/architecture reviewers and the verifier never get the rubric or the tier
-labels — they get the shells instead (see Phase 2) — and the researcher needs neither.
+The rubric ships with this plugin as **two files**, both under `${CLAUDE_PLUGIN_ROOT}/docs/`
+(`${CLAUDE_PLUGIN_ROOT}` expands to the plugin's install directory):
+
+- **`tiers-core.md`** — the classification, shared with every other caller of the rubric:
+  the three tiers, the signals, the test, the floor, the batching rule, and Absorbed vs.
+  Bends. Not coop-specific.
+- **`tiers.md`** — coop's layer on the core: slices as the unit, shells, tier-homogeneity,
+  bubble-up, and the ledger.
+
+Neither is complete alone. **Read both with the Read tool at the start of every run, and
+inject the content of both into every builder and plan-reviewer prompt** — subagents do not
+inherit them from your context, and injecting only one leaves agents either tiering blind
+(no core) or flagging blind (no slices, shells, or bubble-up). Scope the injection:
+`loop-dev` needs both to honor shells, bubble up a mis-tiered slice, and keep an Absorbed fix
+absorbed, and the plan reviewer needs both to challenge the tiering. The code/architecture
+reviewers and the verifier never get the rubric or the tier labels — they get the shells
+instead (see Phase 2) — and the researcher needs neither.
 
 ## Usage
 
@@ -79,9 +86,9 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 1. If no task description was provided, ask for one.
 2. Author the spec — grounded in the codebase, not guesswork. (Same as sloop: research
    first when the task needs it; you write a short spec with 2-6 acceptance criteria.)
-3. **Decompose the change into slices and tier each one**, per `docs/tiers.md`. Break the
+3. **Decompose the change into slices and tier each one**, per `docs/tiers.md` and `docs/tiers-core.md`. Break the
    spec into tier-homogeneous slices (a slice that's half Own, half Race is two slices);
-   classify each with the test in `docs/tiers.md`; assign a builder from the `--escalate`
+   classify each with the test in `docs/tiers-core.md`; assign a builder from the `--escalate`
    level. **Test coverage for an Own slice is its own Co slice, built by an agent** — the
    rubric's anchors put testing around Own code in Co, so folding it into the Own slice hands
    the human boilerplate the tier system never asked them to write. It's foundation-first on
@@ -141,7 +148,7 @@ assigned slices in the spawn prompt; they behave identically otherwise.
      agent — fine for file-disjoint slices, but anything that needs them is
      foundation-first, not parallel.
    - **Hand the human** the slice, its shells, and what "done" looks like for that tier
-     (`docs/tiers.md`) — for an Own slice that's the Verification bar and re-derivable
+     (`docs/tiers-core.md`) — for an Own slice that's the Verification bar and re-derivable
      understanding, not just green tests.
    - **Reconverge by merging, foundation-first.** When an agent finishes, merge its worktree
      branch into the feature branch (foundation slices before the parallel middle); your
@@ -195,11 +202,11 @@ assigned slices in the spawn prompt; they behave identically otherwise.
     - **A shell violated by either side** (the built code doesn't honor the agreed contract)
       is automatically actionable — the seam is what everything else was built against.
     - **Every actionable finding against an Own slice gets classified `Absorbed` or `Bends`**
-      per `docs/tiers.md` (bubble-down). That classification — not who built the slice — is
+      per `docs/tiers-core.md` (bubble-down). That classification — not who built the slice — is
       what decides who fixes it in step 15. Genuinely unsure is a Bend.
 14. **Human tier review — a pass condition.** When the agent verdicts are clean (or every
     remaining finding is dismissed), walk the human through their per-tier review from
-    `docs/tiers.md` before declaring Pass: predict-before-peek on each agent-built Co
+    `docs/tiers-core.md` before declaring Pass: predict-before-peek on each agent-built Co
     slice, a behavior check on each Race slice, and re-derivation of any bubble-up-flagged
     slice. Run the predict-before-peek and re-derivation reads per `docs/re-derive.md` — four
     passes over the slice (types → data flow → logic → edge surfaces), prediction stated

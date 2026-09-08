@@ -1,6 +1,6 @@
 # Re-deriving — how to actually review a slice you didn't build
 
-[`tiers.md`](tiers.md) says what your review has to achieve per tier: predict-before-peek on a
+[`tiers-core.md`](tiers-core.md) says what your review has to achieve per tier: predict-before-peek on a
 Co slice, re-derive anything bubble-up flagged, confirm behavior on a Race slice. This is the
 method for the first two — the read order that gets you a real model of code an agent wrote,
 instead of the feeling of having read it.

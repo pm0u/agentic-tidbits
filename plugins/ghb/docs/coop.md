@@ -20,14 +20,16 @@ the model — throwaway, boilerplate, a well-understood change — plain sloop i
 
 ## The tier rubric
 
-Everything about slices, tiers, shells, and classification lives in [`docs/tiers.md`](tiers.md),
-the single source of truth. Each slice is **Own** (you build or re-derive it), **Co** (an
-agent builds, you review predict-before-peek), or **Race** (an agent builds, you verify it
-works). Blast radius is the dominant signal; unsure defaults to Co, because bubble-up catches
-an under-tiered slice mid-build. Tier decides who *builds* a slice, not who *fixes* it — on a
-fix round, [bubble-down](tiers.md#bubble-down--routing-a-fix-by-the-work-not-by-the-slice)
-routes each finding by the kind of work the fix is, and the ledger keeps your model of an Own
-slice current when an agent lands fixes inside it.
+The rubric is two files. [`docs/tiers-core.md`](tiers-core.md) is the classification —
+shared with every other tool that tiers work, and not coop-specific.
+[`docs/tiers.md`](tiers.md) is coop's layer on it: slices as the unit, shells, bubble-up, and
+the ledger. Each slice is **Own** (you build or re-derive it), **Co** (an agent builds, you
+review predict-before-peek), or **Race** (an agent builds, you verify it works). Blast radius
+is the dominant signal; unsure defaults to Co, because bubble-up catches an under-tiered slice
+mid-build. Tier decides who *builds* a slice, not who *fixes* it — on a fix round,
+[bubble-down](tiers-core.md#routing-a-fix--by-the-work-not-by-the-unit) routes each finding by
+the kind of work the fix is, and the ledger keeps your model of an Own slice current when an
+agent lands fixes inside it.
 
 ## Usage
 

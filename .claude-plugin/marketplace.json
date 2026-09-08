@@ -12,7 +12,7 @@
     {
       "name": "ghb",
       "source": "./plugins/ghb",
-      "description": "Get-home-bag: the sloop and coop engineering loops and adversarial-review commands, plus the agents they spawn."
+      "description": "Get-home-bag: the sloop and coop engineering loops, the adversarial-review and PR-feedback commands, and the shared tier rubric, plus the agents they spawn."
     }
   ]
 }
