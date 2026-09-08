@@ -13,7 +13,7 @@ its own unit and its own routing:
 | ------ | ---- | ------- |
 | [`coop`](tiers.md) | a slice of a change, bounded by shells | who builds it, who fixes it, review depth per phase |
 | `/ghb:resolve-pr-feedback` | a review thread, or a batch of same-shaped threads | who addresses it — one batched agent pass vs. by hand |
-| ad-hoc single task | the whole task | whether you build it or hand it off, and how you review the result |
+| [`/ghb:tier`](../commands/tier.md) | the whole task | whether you build it or hand it off, and how you review what comes back |
 
 Everything below applies unchanged regardless of which unit is in play. Workflow machinery —
 slices, shells, build order, Build Reports, the ledger — belongs to the caller, not here.

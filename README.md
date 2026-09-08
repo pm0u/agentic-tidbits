@@ -39,6 +39,7 @@ The frameworks and their kit. Everything here spawns agents (bundled with the pl
 | [`/ghb:coop`](plugins/ghb/docs/coop.md) | The cooperative loop. A fork of sloop where the work is split into tiered slices ([Own/Co/Race](plugins/ghb/docs/tiers-core.md)) and you build the ones you need to understand while agents build the rest. |
 | `/ghb:review-code` · `/ghb:review-plan` | Adversarial review of recent changes, or of a plan/design doc. |
 | `/ghb:build-n-break` · `/ghb:review-summary` | Execute a task then adversarially review it; morning PR review summary. |
+| [`/ghb:tier`](plugins/ghb/commands/tier.md) | Classify one task, then sequence the split — you build the part you need to understand, an agent takes the rest when you're done. No loop. |
 | [`/ghb:resolve-pr-feedback`](plugins/ghb/commands/resolve-pr-feedback.md) | Address unresolved PR comments, tiered — the mechanical fixes get handled, the ones that would move your model of the code come back to you. |
 
 The agents (`loop-*` builders, `adversarial-*` reviewers) live in this one plugin, so nothing is shared or duplicated across plugins.
