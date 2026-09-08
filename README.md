@@ -23,6 +23,7 @@ Lightweight one-shot tools; install if you just want the utilities.
 
 | Command | What it does |
 |---------|--------------|
+| `/edc:write-task` | Turn a rough request into a task someone can execute AFK — grounded in real code, grilled before it's written. |
 | `/edc:derive-spec` · `/edc:reverse-spec` | Derive a spec from a task, or reverse one out of existing code. |
 | `/edc:trace-flow` · `/edc:mermaid` | Trace a data/execution flow; generate Mermaid diagrams. |
 | `/edc:implementation-summary` · `/edc:ton-of-bricks` | Summarize the intent behind a change; reality-check validation. |
