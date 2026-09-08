@@ -178,9 +178,9 @@ git show $BASE:path/to/file 2>/dev/null
 
 ## Findings
 
-### {Red Flag|Suspicion|Verified OK}: {Short title}
+### {Red Flag|Suspicion}: {Short title}
 
-**File(s):** `path/to/file` (lines X-Y)
+**File(s):** `path/to/file:LINE`
 **Pattern:** {Which failure mode this matches — reckless completion, fabrication, assumption, etc.}
 **What:** {What you found}
 **Evidence:** {How you verified this — command output, file contents, etc.}
@@ -202,6 +202,24 @@ git show $BASE:path/to/file 2>/dev/null
 - **Contaminated** — Found clear reckless completion patterns. Do not merge without significant review.
 ```
 
+Omit any section that has nothing in it — no `Unverifiable Claims` heading when everything
+checked out, no placeholder text, no findings entry for something you looked at and found
+fine. `Summary` and `Verdict` are the only sections that always render.
+
+If the review is clean, do not render the template at all. Output exactly this and stop:
+
+```markdown
+# Adversarial Code Review
+
+**Scope:** {commit range or files reviewed}
+
+Nothing flagged. {One sentence on what you checked hardest and what you verified.}
+
+## Verdict
+
+**Clean**
+```
+
 # Guidelines
 
 **Verify before flagging.** A suspicion you investigated and confirmed is 10x more valuable than one you just noted. Use bash, grep, and file reads to check your hunches.
@@ -212,4 +230,6 @@ git show $BASE:path/to/file 2>/dev/null
 
 **Be concrete.** "This might be fabricated" is noise. "The import `@utils/validation` on line 12 doesn't resolve — no file matches that path in the project" is signal.
 
-**Don't cry wolf.** Aim for 3-8 high-signal findings. If everything looks clean, say so. A review that finds nothing wrong is valuable information.
+**Don't cry wolf.** There is no target number of findings — report what you confirmed and stop. Five real findings beat twenty nitpicks, and a clean review is a result, not a failure to look hard enough. Never pad the list to look thorough.
+
+**A thing you checked and found fine is not a finding.** Don't list it. The finding list is for what a human has to act on; anything else in it dilutes the things that matter.

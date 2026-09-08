@@ -18,14 +18,15 @@ re-deriving the code. So coop routes those slices to the human on purpose.
 
 ## The tier rubric
 
-Slices, tiers, shells, classification, and bubble-up are all defined in the tier rubric,
+Slices, tiers, shells, classification, bubble-up, and bubble-down (plus the ledger) are all
+defined in the tier rubric,
 which ships with this plugin at **`${CLAUDE_PLUGIN_ROOT}/docs/tiers.md`** — the single
 source of truth. Read that file (with the Read tool; `${CLAUDE_PLUGIN_ROOT}` expands to the
 plugin's install directory) at the start of every run, and **inject its content into every
 builder and plan-reviewer prompt** — subagents do not inherit it from your context, so an
 un-injected rubric means agents tiering and flagging blind. Scope the injection: `loop-dev`
-needs it to honor shells and bubble up, and the plan reviewer needs it to challenge the
-tiering. The code/architecture reviewers and the verifier never get the rubric or the tier
+needs it to honor shells, bubble up a mis-tiered slice, and keep an Absorbed fix absorbed,
+and the plan reviewer needs it to challenge the tiering. The code/architecture reviewers and the verifier never get the rubric or the tier
 labels — they get the shells instead (see Phase 2) — and the researcher needs neither.
 
 ## Usage
@@ -62,7 +63,7 @@ $ARGUMENTS
 | Researcher    | `loop-researcher` agent                  | Explore the codebase and return a brief so the coordinator authors the spec and the tiering from fact (Phase 0, when needed).                 |
 | Plan reviewer | `adversarial-plan-reviewer` agent         | Stress-test the spec **and the tiering** at handoff, before any code.                                                                         |
 | Human builder | The user                                  | Builds the slices routed to them by tier × escalate. Their understanding is a first-class output.                                             |
-| Agent builder | `loop-dev` agent                         | Builds the slices routed to agents. Carries the injected rubric so it can honor shells and bubble up mis-tiered slices. Fresh each iteration. |
+| Agent builder | `loop-dev` agent                         | Builds the slices routed to agents, plus **Absorbed fixes inside human-built slices** on fix rounds. Carries the injected rubric so it can honor shells, bubble up mis-tiered slices, and stop when a fix bends. Fresh each iteration. |
 | Reviewer A    | `adversarial-code-reviewer` agent         | Line-level, **every slice regardless of tier or who built it**.                                                                               |
 | Reviewer B    | `adversarial-architecture-reviewer` agent | System-level, every slice.                                                                                                                    |
 | Verifier      | `loop-verifier` agent                    | Reproduce verification claims — every agent Build Report plus the human's done signal (Phase 2, when any claim is behavioral).                |
@@ -81,7 +82,10 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 3. **Decompose the change into slices and tier each one**, per `docs/tiers.md`. Break the
    spec into tier-homogeneous slices (a slice that's half Own, half Race is two slices);
    classify each with the test in `docs/tiers.md`; assign a builder from the `--escalate`
-   level. Identify the seams between slices and draft a shell — signature plus one-line
+   level. **Test coverage for an Own slice is its own Co slice, built by an agent** — the
+   rubric's anchors put testing around Own code in Co, so folding it into the Own slice hands
+   the human boilerplate the tier system never asked them to write. It's foundation-first on
+   its Own slice (step 4): the core has to exist before it can be pinned. Identify the seams between slices and draft a shell — signature plus one-line
    contract — for each, authored by the owner of the higher-tier side. You decide the
    decomposition; the plan reviewer (step 5) and the human (the gate, step 6) get to
    challenge it, so you don't need to perfect it alone. Output: a slice list, each entry a
@@ -190,18 +194,41 @@ assigned slices in the spawn prompt; they behave identically otherwise.
       wrong.
     - **A shell violated by either side** (the built code doesn't honor the agreed contract)
       is automatically actionable — the seam is what everything else was built against.
+    - **Every actionable finding against an Own slice gets classified `Absorbed` or `Bends`**
+      per `docs/tiers.md` (bubble-down). That classification — not who built the slice — is
+      what decides who fixes it in step 15. Genuinely unsure is a Bend.
 14. **Human tier review — a pass condition.** When the agent verdicts are clean (or every
     remaining finding is dismissed), walk the human through their per-tier review from
     `docs/tiers.md` before declaring Pass: predict-before-peek on each agent-built Co
     slice, a behavior check on each Race slice, and re-derivation of any bubble-up-flagged
-    slice. Findings from this review are actionable like any reviewer's. The loop never
-    passes on agent verdicts alone.
-15. Decide: **Pass** / **Iterate** / **Stall** (escalate). Same thresholds as sloop. On
-    iterate, a mixed round routes each slice's fixes to whoever owns it: agent-slice
-    findings go to a **fresh** `loop-dev` (never the previous builder); human-slice findings
-    go back to **you**. It follows the same build order as Phase 1 — any seam a fix has to
-    land on before the rest can proceed goes first (foundation-first), then the remaining
-    fixes run in parallel and reconverge for the next review round.
+    slice. Run the predict-before-peek and re-derivation reads per `docs/re-derive.md` — four
+    passes over the slice (types → data flow → logic → edge surfaces), prediction stated
+    before each pass. Where you hand the human a map of a slice to read against, it describes
+    and stops: no *verify this*, no *confirm that*, no *consider*. A map that says what to
+    check replaces the human's model with your checklist, which is the one thing this step
+    exists to prevent. Also hand them **the ledger for each Own slice they built** — every
+    agent fix that landed inside it. They read the whole ledger (it's lines, not a diff) and
+    re-derive only the model-touching entries; an Own slice with an empty ledger needs nothing
+    here, because the re-deriving was the building. Findings from this review are actionable
+    like any reviewer's. The loop never passes on agent verdicts alone.
+15. Decide: **Pass** / **Iterate** / **Stall** (escalate). Same thresholds as sloop, plus one
+    coop-specific stall: **a slice accumulating repeated Bends or repeated model-touching ledger
+    entries** is telling you its shape is wrong rather than its coverage, and no number of
+    absorbed cases fixes a shape — stop and escalate instead of grinding another round of guards
+    onto it.
+
+    On iterate, route every actionable finding by **the kind of work the fix is, not by who built
+    the slice**. Agent-slice findings go to a **fresh** `loop-dev` (never the previous builder).
+    Own-slice findings split per their step 13 classification: **Absorbed** fixes also go to a
+    fresh `loop-dev` — spawned with the slice's shells, its ledger so far, and the explicit
+    instruction to stop and report rather than reshape the human's core if the fix turns out to
+    bend — while **Bends** route to **the human**, whose slice it was. Fix rounds follow Phase 1's build order and
+    isolation rules: foundation-first for any seam a fix has to land on before the rest can
+    proceed, then parallel in worktrees, then reconverge.
+
+    **Maintain the ledger.** Require each fix-round Build Report to emit a ledger line for every
+    fix it landed inside an Own slice — case, delta (`file.ts:LINE`), model-touching yes/no — and
+    fold them into that slice's ledger before the next round's tier review or the pass.
 
 ### Phase 4: Report
 
@@ -209,9 +236,14 @@ assigned slices in the spawn prompt; they behave identically otherwise.
 17. Present the final report — the sloop report shape, plus:
     - **Who built what** — which slices were human-built vs agent-built, and their tiers.
     - **Tiering decisions** — and any the plan reviewer or bubble-up changed.
+    - **The ledger** — per Own slice, every agent fix that landed inside it, with the
+      model-touching entries called out. This is the record of what moved under the human in
+      code they're credited with owning.
     - **Understanding check** — for each Own slice the human built, a short prompt to confirm
       they can still explain it cold: one or two pointed questions about why it works or what
-      breaks if a key assumption changes. A passed loop where the human can't answer for their
+      breaks if a key assumption changes. **Where a slice has a ledger, at least one question
+      comes from a model-touching entry** — that's the code they didn't write inside a slice
+      they're supposed to know cold, and it's the part most likely to have quietly diverged. A passed loop where the human can't answer for their
       own Own slices is a failed loop — this is where that gets caught, not at 2am. A failed
       answer doesn't close the loop: the human re-derives the slice (walking it with an agent
       is fine) and the check re-runs; record the miss and the re-derivation in the report.
@@ -222,7 +254,13 @@ assigned slices in the spawn prompt; they behave identically otherwise.
   only in decomposition, tiering, and adjudication.
 - **The human's understanding is a first-class output.** A passed loop where the human
   can't explain their own Own slices is a failed loop, even if the code is correct.
-- **Fresh agent every iteration** (agent slices only). Human slices iterate with the human.
+- **Fresh agent every iteration.** Human slices iterate with the human on Bends and with a
+  fresh agent on Absorbed fixes.
+- **Tier decides who builds, not who fixes.** Most findings against a human-built core are
+  mechanical — a missing guard, an unanticipated input, an optimization behind unchanged
+  behavior. Routing those back to the human because of who owns the slice buys no
+  understanding and costs an afternoon. Route by the kind of work, keep the ledger, re-derive
+  what actually moved.
 - **Agent review never softens by tier.** The tier system decides who builds and how deep
   the _human_ reviews; adversarial agents attack everything at full strength.
 - **Shells are the contract.** Once a shell is agreed, neither side changes it unilaterally —

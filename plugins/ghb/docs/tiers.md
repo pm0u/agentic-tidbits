@@ -1,7 +1,7 @@
 # Tiers — where your understanding budget goes
 
-The rubric `coop` uses to decide, per slice of a change, who builds it and how much
-you need to understand it afterward. It's the single source of truth: `coop.md`
+The rubric `coop` uses to decide, per slice of a change, who builds it, who fixes it on a
+review round, and how much you need to understand it afterward. It's the single source of truth: `coop.md`
 references it, and the coordinator injects it into every builder and plan-reviewer
 prompt. The rubric lives _here_ and nowhere else, so it can't drift.
 
@@ -48,8 +48,10 @@ qualifier list is the **Concrete anchors** under [Classifying a slice](#classify
 | **Your review**          | re-derive it — reconstruct the reasoning, don't just read it               | predict-before-peek, then accept                 | confirm it works, move on                                                           |
 
 _Your review_ is what _you_ do; it only bites when an agent built the slice — for an Own
-slice you built yourself, the re-deriving was the building. Agent (adversarial) review is
-not in this table: it runs at full depth on every tier, and that constant lives in `coop.md`.
+slice you built yourself, the re-deriving was the building. The method for it — the four-pass
+read order, and how to predict before peeking — is [`re-derive.md`](re-derive.md). Agent
+(adversarial) review is not in this table: it runs at full depth on every tier, and that
+constant lives in `coop.md`.
 
 ## Classifying a slice
 
@@ -105,3 +107,53 @@ What to do when one fires:
 
 - **If you can still build it correctly** — build it, but flag it in the Build Report's Own-tier section so the human re-derives it in review. A Co/Race tag downgrades their review, and an unflagged Own slice is one that silently skipped the model the human needed.
 - **If building it requires an Own-class decision you'd only be guessing at** — stop and report blocked. Blocked beats fabricated; don't pick for the human on a slice that was supposed to be theirs.
+
+## Bubble-down — routing a _fix_ by the work, not by the slice
+
+Tier decides who **builds** a slice. It does not decide who **fixes** it. On a fix round,
+most findings against a human-built core are mechanical — an unhandled input, a missing
+guard, a case the spec didn't anticipate, an optimization behind unchanged behavior. Routing
+those back to the human because they landed in an Own slice is how a dozen one-line edge
+cases cost an afternoon and teach nothing. Bubble-up catches a slice that mattered more than
+its tag; bubble-down catches a fix that matters less.
+
+Every finding against an Own slice is classified:
+
+- **Absorbed** — the fix lands at an existing extension point: an added case, guard, or branch
+  that leaves the slice's shape, invariants, and contracts exactly as they were. Optimization
+  that provably preserves behavior is Absorbed. → **an agent fixes it**, and it gets a ledger
+  line.
+- **Bends** — the fix changes an invariant, restructures control flow, moves a contract, or
+  turns on a judgment the spec doesn't pin. → **you fix it.** This is the code the Own tag was
+  protecting in the first place.
+
+Genuinely unsure → **Bends**. The asymmetry is deliberate: an over-routed Absorbed fix costs
+you a small edit you'd have made anyway, while an under-routed Bend quietly rewrites the model
+you're supposed to be holding.
+
+An agent that starts an Absorbed fix and finds that it bends **stops and reports it** — the
+bubble-up rule, applied to a fix instead of a slice. It does not reshape a human's core to
+make a fix fit.
+
+### The ledger
+
+Once agents are landing fixes inside a slice you built, "you wrote it, so you know it" stops
+being true on its own. The ledger is what keeps it true. Every agent fix inside an Own slice
+gets one line:
+
+| Case | Delta | Model-touching |
+| ---- | ----- | -------------- |
+| the finding or input condition it answers | `file.ts:LINE` | yes / no |
+
+**Model-touching** has one test: would someone who could explain this slice cold before the
+fix now be wrong about it? Adding a guard for an input you already knew was possible is no.
+Changing what the function returns when that input arrives is yes.
+
+You read the whole ledger — it's a dozen lines, not a diff — and re-derive
+([`re-derive.md`](re-derive.md)) only the model-touching entries. That's the trade: the
+mechanical fixes leave your plate and your model still stays current.
+
+A ledger is also a signal about the core itself. Repeated model-touching entries, or repeated
+Bends, on the same slice means its **shape** is wrong rather than its coverage — and no number
+of absorbed cases fixes a shape. The loop should say so instead of grinding another round of
+guards onto it.

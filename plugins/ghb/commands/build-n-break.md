@@ -63,8 +63,8 @@ $ARGUMENTS
 {Paste the adversarial code reviewer's findings}
 
 ### Disputes for Human Review
-{List only the items marked Red Flag or Suspicion — these are the things
-that need your eyes. Verified OK items are noted but not highlighted.}
+{List the items marked Red Flag or Suspicion — these are the things that need
+your eyes. If the review came back clean, say so in one line and stop.}
 
 ### What to check
 {Prioritized list of specific things the human should verify,

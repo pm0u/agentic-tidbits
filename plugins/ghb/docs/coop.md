@@ -24,7 +24,10 @@ Everything about slices, tiers, shells, and classification lives in [`docs/tiers
 the single source of truth. Each slice is **Own** (you build or re-derive it), **Co** (an
 agent builds, you review predict-before-peek), or **Race** (an agent builds, you verify it
 works). Blast radius is the dominant signal; unsure defaults to Co, because bubble-up catches
-an under-tiered slice mid-build.
+an under-tiered slice mid-build. Tier decides who *builds* a slice, not who *fixes* it — on a
+fix round, [bubble-down](tiers.md#bubble-down--routing-a-fix-by-the-work-not-by-the-slice)
+routes each finding by the kind of work the fix is, and the ledger keeps your model of an Own
+slice current when an agent lands fixes inside it.
 
 ## Usage
 
@@ -49,7 +52,9 @@ plus a one-line contract) for every seam between slices. The plan reviewer stres
 spec *and the tiering* — a Race slice that mutates a shared invariant should be Own. You
 approve the frozen spec, slice list, and shells before any code.
 
-**Phase 1 — build.** Shells are agreed first. Then the build runs in the order set per seam:
+**Phase 1 — build.** Shells are agreed first. Test coverage for an Own slice is its own Co
+slice, built by an agent and ordered foundation-first behind the core it pins — the rubric
+already classifies testing around Own code as Co work, so it never lands on you. Then the build runs in the order set per seam:
 foundation-first seams (where a slice needs its predecessor to actually exist, not just a
 contract) go first; everything else fans out in parallel — each concurrent agent slice runs
 in its own git worktree (via `loop-dev` with worktree isolation) while you build your slices
@@ -73,14 +78,23 @@ finding — plus: a violated shell is automatically actionable, and a bubble-up 
 its slice. Once the agent
 verdicts are clean, you do your per-tier review before the loop can pass — predict-before-peek
 on each Co slice, a behavior check on each Race slice, re-derivation of anything bubble-up
-flagged. On iterate, agent findings go to a fresh `loop-dev` and human findings come back to
-you.
+flagged. [`docs/re-derive.md`](re-derive.md) is the method for those reads. On iterate, findings route by the kind of work the fix is rather than by who built the slice:
+an **Absorbed** fix — an added case, a guard, an optimization behind unchanged behavior, landing
+at an existing extension point without moving an invariant or a contract — goes to a fresh
+`loop-dev` even inside a slice you built, while a **Bend** comes back to you. An agent that
+starts an Absorbed fix and finds it bends stops rather than reshaping your core. Every agent fix
+inside an Own slice gets a ledger line — case, delta, model-touching yes/no — and at the tier
+review you read the ledger and re-derive only the model-touching entries. That's the mechanism
+that gets a dozen minor edge cases off your plate without costing you the model you built the
+slice to get.
 
-**Phase 4 — report.** The sloop report shape, plus who built what, the tiering decisions, and
-an **understanding check** — a pointed question or two per Own slice you built, to confirm you
+**Phase 4 — report.** The sloop report shape, plus who built what, the tiering decisions, the
+per-slice ledger, and an **understanding check** — a pointed question or two per Own slice you built, to confirm you
 can still explain it cold. A passed loop where you can't answer for your own slices is a failed
-loop; this is where that gets caught, not at 2am. A missed answer doesn't close the loop — you
-re-derive the slice and the check re-runs.
+loop; this is where that gets caught, not at 2am. Where a slice has a ledger, at least one
+question comes from a model-touching entry — the code you didn't write inside a slice you're
+credited with owning. A missed answer doesn't close the loop — you re-derive the slice and the
+check re-runs.
 
 ## What you get back
 
@@ -98,3 +112,9 @@ you and still survived adversarial review.
   the adversarial agents attack everything at full strength.
 - Shells are contracts. Once agreed, neither side changes one unilaterally — a contract that
   moves under a parallel builder is how the seam breaks.
+- Bubble-down only moves *mechanical* fixes. Unsure is always a Bend, because an over-routed
+  Absorbed fix costs you an edit you'd have made anyway while an under-routed Bend quietly
+  rewrites the model you're supposed to be holding.
+- A slice that keeps producing Bends or model-touching ledger entries has the wrong *shape*,
+  not thin coverage. The loop stalls there on purpose — no number of absorbed cases fixes a
+  shape.
